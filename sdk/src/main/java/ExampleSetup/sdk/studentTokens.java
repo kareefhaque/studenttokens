@@ -12,6 +12,7 @@ import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.FileAppendTransaction;
 import com.hedera.hashgraph.sdk.FileContentsQuery;
 import com.hedera.hashgraph.sdk.FileCreateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
@@ -41,160 +42,235 @@ public class studentTokens {
         return new String(encoder.encodeToString(bytes));
     }
 	
+	private static void chooseSTEM(FileId peerfile, Client opclient, PrivateKey imagekey, Scanner clubinput) throws Exception {
+		//Adding STEM image to student's NFT file
+		 File STEMimage = new File("C:\\Users\\pastr\\OneDrive\\Desktop\\stemtoken.jpg");
+	        
+	     String encodedSTEMimage = (" " + encodeFileToBase64(STEMimage));
+	     
+	     FileAppendTransaction appendSTEM = new FileAppendTransaction()
+				    .setFileId(peerfile)
+				    .setContents("\n" + encodedSTEMimage);
+			FileAppendTransaction modifyMaxTransactionFee = appendSTEM.setMaxTransactionFee(new Hbar(2)); 
+
+			
+			TransactionResponse txResponse = modifyMaxTransactionFee.
+					freezeWith(opclient)
+					.sign(imagekey)
+					.execute(opclient);
+
+			
+			TransactionReceipt receipt = txResponse.getReceipt(opclient);
+
+			
+			Status transactionStatus = receipt.status;
+
+			System.out.println("The transaction consensus status is " + transactionStatus + ". You are a part of STEM Team!");
+            System.out.println("Type 0 to display your NFT (encoded in Base64, use a decoder online to display images)");
+            System.out.println("Type 1 for ICE");
+            System.out.println("Type 2 for Robotics Club");
+            System.out.println("Type 3 for P2P Tutoring");
+            int choice = clubinput.nextInt();
+            
+            if(choice == 0) {
+            	FileContentsQuery query = new FileContentsQuery()
+            		    .setFileId(peerfile);
+
+            		//Sign with client operator private key and submit the query to a Hedera network
+            		ByteString contents = query.execute(opclient);
+
+            		//Change to Utf-8 encoding
+            		String contentsToUtf8 = contents.toStringUtf8();
+
+            		System.out.println(contentsToUtf8);
+            }
+            else if(choice == 1) {
+            	chooseICE(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 2) {
+            	chooseRobot(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 3) {
+            	chooseP2P(peerfile, opclient, imagekey, clubinput);
+            }
+	}
 	
-	private static void chooseClubs(int i, AccountId peeracc, PrivateKey peerkey, Client opclient) throws Exception {
-		
-		
-		//Create STEM Token
-		PrivateKey STEMAccountPrivateKey = PrivateKey.generate();
-        PublicKey STEMAccountPublicKey = STEMAccountPrivateKey.getPublicKey();
-        
-        TransactionResponse STEMAccount = new AccountCreateTransaction()
-        	     .setKey(STEMAccountPublicKey)
-        	     .setInitialBalance( Hbar.fromTinybars(1000)) //Student account starts with 1000 tinybars
-        	     .execute(opclient);
-        
-        AccountId STEMAccountId = STEMAccount.getReceipt(opclient).accountId;
-        
-        PrivateKey STEMadminKey = PrivateKey.generate();
-        
-        PrivateKey STEMkycKey = PrivateKey.generate();
-        
-        File STEMimage = new File("C:\\Users\\pastr\\OneDrive\\Desktop\\stemtoken.jpg");
-        
-        String encodedSTEMimage = encodeFileToBase64(STEMimage);
-        
-        PrivateKey STEMImagePrivateKey = PrivateKey.generate();
-        FileCreateTransaction STEMblockchain = new FileCreateTransaction()
-        	    .setKeys(STEMImagePrivateKey) 
-        	    .setContents(encodedSTEMimage);
-        
+	private static void chooseICE(FileId peerfile, Client opclient, PrivateKey imagekey, Scanner clubinput) throws Exception {
+		//Adding ICE image to student's NFT file
+		 File ICEimage = new File("C:\\Users\\pastr\\OneDrive\\Desktop\\icetoken.jpg");
+	        
+	     String encodedICEimage = (" " + encodeFileToBase64(ICEimage));
+	     
+	     FileAppendTransaction appendICE = new FileAppendTransaction()
+				    .setFileId(peerfile)
+				    .setContents("\n" + encodedICEimage);
+			FileAppendTransaction modifyMaxTransactionFee = appendICE.setMaxTransactionFee(new Hbar(2)); 
 
-        FileCreateTransaction STEMmodifyMaxTransactionFee = STEMblockchain.setMaxTransactionFee(new Hbar(2)); 
-    	TransactionResponse STEMtxResponse = STEMmodifyMaxTransactionFee
-    			.freezeWith(opclient)
-    			.sign(STEMImagePrivateKey)
-    			.execute(opclient);
-    	
-    	TransactionReceipt STEMreceipt = STEMtxResponse.getReceipt(opclient);
+			
+			TransactionResponse txResponse = modifyMaxTransactionFee.
+					freezeWith(opclient)
+					.sign(imagekey)
+					.execute(opclient);
 
-    	FileId STEMFileId = STEMreceipt.fileId;
-        
-        TokenCreateTransaction STEMtoken = new TokenCreateTransaction() //Creating token and preparing for Hedera testnet transaction
-    	        .setTokenName("STEM Team Activity Token")
-    	        .setTokenSymbol(STEMFileId.toString()) //Setting the token symbol as the address of the file on the hashgraph so that the token associates with the image
-    	        .setTokenMemo(STEMFileId.toString()) //Setting token memo as file ID so that it is easier to find NFT on search engines like DragonGlass
-    	        .setTreasuryAccountId(STEMAccountId) //Giving the token to the student's account
-    	        .setInitialSupply(200) //Supply of token is 1, so that the token is non-fungible
-    	        .setAdminKey(STEMadminKey.getPublicKey()) //Signing with client's admin key so that the transaction is verified with the NFT client
-    	        .setKycKey(STEMkycKey) //KYC key is so that student can easily check whether token belongs to them or not
-    	        .setMaxTransactionFee(new Hbar(30)); //Maximum fee for transferring token to another account
-        
-        TransactionResponse STEMtxResponsetoken = STEMtoken //Completing token creation using transaction, signing with supervisor's private key
-          		 .freezeWith(opclient)
-          		 .sign(STEMadminKey)
-          		 .sign(STEMAccountPrivateKey)
-          		 .execute(opclient);
-       
-        TransactionReceipt STEMreceipttoken = STEMtxResponsetoken.getReceipt(opclient); //Getting the receipt of the transaction to display token's ID
+			
+			TransactionReceipt receipt = txResponse.getReceipt(opclient);
 
-           
-        TokenId STEMtokenId = STEMreceipttoken.tokenId; //Getting token's ID from the receipt
-        
-        //Create ICE Token
-        PrivateKey ICEAccountPrivateKey = PrivateKey.generate();
-        PublicKey ICEAccountPublicKey = ICEAccountPrivateKey.getPublicKey();
-        
-        TransactionResponse ICEAccount = new AccountCreateTransaction()
-        	     .setKey(ICEAccountPublicKey)
-        	     .setInitialBalance( Hbar.fromTinybars(1000)) //Student account starts with 1000 tinybars
-        	     .execute(opclient);
-        
-        AccountId ICEAccountId = ICEAccount.getReceipt(opclient).accountId;
-        
-        PrivateKey ICEadminKey = PrivateKey.generate();
-        
-        PrivateKey ICEkycKey = PrivateKey.generate();
-        
-        File ICEimage = new File("C:\\Users\\pastr\\OneDrive\\Desktop\\icetoken.jpg");
-        
-        String encodedICEimage = encodeFileToBase64(ICEimage);
-        
-        PrivateKey ICEImagePrivateKey = PrivateKey.generate();
-        FileCreateTransaction ICEblockchain = new FileCreateTransaction()
-        	    .setKeys(ICEImagePrivateKey) 
-        	    .setContents(encodedICEimage);
-        
+			
+			Status transactionStatus = receipt.status;
 
-        FileCreateTransaction ICEmodifyMaxTransactionFee = ICEblockchain.setMaxTransactionFee(new Hbar(2)); 
-    	TransactionResponse ICEtxResponse = ICEmodifyMaxTransactionFee
-    			.freezeWith(opclient)
-    			.sign(ICEImagePrivateKey)
-    			.execute(opclient);
-    	
-    	TransactionReceipt ICEreceipt = ICEtxResponse.getReceipt(opclient);
+			System.out.println("The transaction consensus status is " + transactionStatus + ". You are a part of ICE!");
+			System.out.println("Type 0 to display your NFT (encoded in Base64, use a decoder online to display images)");
+            System.out.println("Type 1 for STEM");
+            System.out.println("Type 2 for Robotics Club");
+            System.out.println("Type 3 for P2P Tutoring");
+            int choice = clubinput.nextInt();
+            
+            if(choice == 0) {
+            	FileContentsQuery query = new FileContentsQuery()
+            		    .setFileId(peerfile);
 
-    	FileId ICEFileId = ICEreceipt.fileId;
-        
-        TokenCreateTransaction ICEtoken = new TokenCreateTransaction() //Creating token and preparing for Hedera testnet transaction
-    	        .setTokenName("ICE Team Activity Token")
-    	        .setTokenSymbol(ICEFileId.toString()) //Setting the token symbol as the address of the file on the hashgraph so that the token associates with the image
-    	        .setTokenMemo(ICEFileId.toString()) //Setting token memo as file ID so that it is easier to find NFT on search engines like DragonGlass
-    	        .setTreasuryAccountId(ICEAccountId) //Giving the token to the student's account
-    	        .setInitialSupply(200) //Supply of token is 1, so that the token is non-fungible
-    	        .setAdminKey(ICEadminKey.getPublicKey()) //Signing with client's admin key so that the transaction is verified with the NFT client
-    	        .setKycKey(ICEkycKey) //KYC key is so that student can easily check whether token belongs to them or not
-    	        .setMaxTransactionFee(new Hbar(30)); //Maximum fee for transferring token to another account
-        
-        TransactionResponse ICEtxResponsetoken = ICEtoken //Completing token creation using transaction, signing with supervisor's private key
-         		 .freezeWith(opclient)
-         		 .sign(ICEadminKey)
-         		 .sign(ICEAccountPrivateKey)
-         		 .execute(opclient);
-      
-       TransactionReceipt ICEreceipttoken = ICEtxResponsetoken.getReceipt(opclient); //Getting the receipt of the transaction to display token's ID
+            		//Sign with client operator private key and submit the query to a Hedera network
+            		ByteString contents = query.execute(opclient);
 
-          
-       TokenId ICEtokenId = ICEreceipttoken.tokenId; //Getting token's ID from the receipt
-       
-        
-        
+            		//Change to Utf-8 encoding
+            		String contentsToUtf8 = contents.toStringUtf8();
+
+            		System.out.println(contentsToUtf8);
+            }
+            else if(choice == 1) {
+            	chooseSTEM(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 2) {
+            	chooseRobot(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 3) {
+            	chooseP2P(peerfile, opclient, imagekey, clubinput);
+            }
+	}
+	
+	private static void chooseRobot(FileId peerfile, Client opclient, PrivateKey imagekey, Scanner clubinput) throws Exception {
+		//Adding robotics image to student's NFT file
+		 File Robotimage = new File("C:\\Users\\pastr\\OneDrive\\Desktop\\robottoken.jpg");
+	        
+	     String encodedRobotimage = (" " + encodeFileToBase64(Robotimage));
+	     
+	     FileAppendTransaction appendRobot = new FileAppendTransaction()
+				    .setFileId(peerfile)
+				    .setContents("\n" + encodedRobotimage);
+			FileAppendTransaction modifyMaxTransactionFee = appendRobot.setMaxTransactionFee(new Hbar(2)); 
+
+			
+			TransactionResponse txResponse = modifyMaxTransactionFee.
+					freezeWith(opclient)
+					.sign(imagekey)
+					.execute(opclient);
+
+			
+			TransactionReceipt receipt = txResponse.getReceipt(opclient);
+
+			
+			Status transactionStatus = receipt.status;
+
+			System.out.println("The transaction consensus status is " + transactionStatus + ". You are a part of Platypi Kinetics!");
+			System.out.println("Type 0 to display your NFT (encoded in Base64, use a decoder online to display images)");
+            System.out.println("Type 1 for STEM");
+            System.out.println("Type 2 for ICE");
+            System.out.println("Type 3 for P2P Tutoring");
+            int choice = clubinput.nextInt();
+            
+            if(choice == 0) {
+            	FileContentsQuery query = new FileContentsQuery()
+            		    .setFileId(peerfile);
+
+            		//Sign with client operator private key and submit the query to a Hedera network
+            		ByteString contents = query.execute(opclient);
+
+            		//Change to Utf-8 encoding
+            		String contentsToUtf8 = contents.toStringUtf8();
+
+            		System.out.println(contentsToUtf8);
+            }
+            else if(choice == 1) {
+            	chooseSTEM(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 2) {
+            	chooseICE(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 3) {
+            	chooseP2P(peerfile, opclient, imagekey, clubinput);
+            }
+	}
+	
+	private static void chooseP2P(FileId peerfile, Client opclient, PrivateKey imagekey, Scanner clubinput) throws Exception {
+		//Adding P2P image to student's NFT file
+	      File P2Pimage = new File("C:\\Users\\pastr\\OneDrive\\Desktop\\p2ptoken.jpg");
+	        
+	      String encodedP2Pimage = (" " + encodeFileToBase64(P2Pimage));
+	      
+	      FileAppendTransaction appendP2P = new FileAppendTransaction()
+				    .setFileId(peerfile)
+				    .setContents("\n" + encodedP2Pimage);
+			FileAppendTransaction modifyMaxTransactionFee = appendP2P.setMaxTransactionFee(new Hbar(2)); 
+
+			
+			TransactionResponse txResponse = modifyMaxTransactionFee.
+					freezeWith(opclient)
+					.sign(imagekey)
+					.execute(opclient);
+
+			
+			TransactionReceipt receipt = txResponse.getReceipt(opclient);
+
+			
+			Status transactionStatus = receipt.status;
+
+			System.out.println("The transaction consensus status is " + transactionStatus + ". You are a part of P2P Tutoring!");
+			System.out.println("Type 0 to display your NFT (encoded in Base64, use a decoder online to display images)");
+            System.out.println("Type 1 for STEM");
+            System.out.println("Type 2 for ICE");
+            System.out.println("Type 3 for Robotics");
+            int choice = clubinput.nextInt();
+            
+            if(choice == 0) {
+            	FileContentsQuery query = new FileContentsQuery()
+            		    .setFileId(peerfile);
+
+            		//Sign with client operator private key and submit the query to a Hedera network
+            		ByteString contents = query.execute(opclient);
+
+            		//Change to Utf-8 encoding
+            		String contentsToUtf8 = contents.toStringUtf8();
+
+            		System.out.println(contentsToUtf8);
+            }
+            else if(choice == 1) {
+            	chooseSTEM(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 2) {
+            	chooseICE(peerfile, opclient, imagekey, clubinput);
+            }
+            else if(choice == 3) {
+            	chooseRobot(peerfile, opclient, imagekey, clubinput);
+            }
+	}
+	
+	private static void chooseClubs(int i, AccountId peeracc, PrivateKey peerkey, FileId peerfile, PrivateKey imagekey, Client opclient) throws Exception {
+		Scanner clubinput = new Scanner(System.in);
+	       
 		if(i == 0) {
-			TransferTransaction transaction = new TransferTransaction()
-				     .addTokenTransfer(STEMtokenId, STEMAccountId, -1)
-				     .addTokenTransfer(STEMtokenId, peeracc, 1);
-
-				//Sign with the client operator key and submit the transaction to a Hedera network
-			TransactionResponse STEMtransferResponse = transaction.execute(opclient);
-
-				//Request the receipt of the transaction
-			TransactionReceipt STEMtransferreceipt = STEMtransferResponse.getReceipt(opclient);
-
-				//Get the transaction consensus status
-			Status STEMtransfertransactionStatus = STEMtransferreceipt.status;
-
-			System.out.println("The transaction consensus status is " + STEMtransfertransactionStatus);
-
+			chooseSTEM(peerfile, opclient, imagekey, clubinput);
 		}
 		else if(i == 1) {
-			//transferICEToken();
+			chooseICE(peerfile, opclient, imagekey, clubinput);
 		}
 		else if(i == 2) {
-			//transferRobotToken();
+			chooseRobot(peerfile, opclient, imagekey, clubinput);
+			   
 		}
 		else if(i == 3) {
-			//tranferP2PToken();
+			chooseP2P(peerfile, opclient, imagekey, clubinput);
 		}
-		else {
-			System.out.println("You did not pick a club. Displaying token balances...");
-            AccountBalanceQuery tokenquery = new AccountBalanceQuery()
-       			 .setAccountId(peeracc);
-
-       			//Sign with the operator private key and submit to a Hedera network
-       			AccountBalance tokenBalance = tokenquery.execute(opclient);
-
-       			System.out.println("The token balance(s) for this account: " +tokenBalance.token);
-		}
+		
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -223,7 +299,7 @@ public class studentTokens {
             
             AccountId studentAccountId = studentAccount.getReceipt(client).accountId;
             System.out.println("Your student account ID is: " + studentAccountId);
-            System.out.println("To create your student NFT, specify the file location of your image. Image must be smaller than 4kb.");
+            System.out.println("To create your student NFT, specify the file location of your image. Image must be smaller than 4kb."); //Right now, Hedera files can only be up to 4kb, IPFS can handle bigger files, might switch later
             String location = tokinput.nextLine();
             
             File nftlocal =  new File(location);
@@ -257,7 +333,7 @@ public class studentTokens {
             TokenCreateTransaction studenttoken = new TokenCreateTransaction() //Creating token and preparing for Hedera testnet transaction
         	        .setTokenName(studentname + "'s NFT")
         	        .setTokenSymbol(NFTFileId.toString()) //Setting the token symbol as the address of the file on the hashgraph so that the token associates with the image
-        	        .setTokenMemo("Image Address: " + NFTFileId.toString()) //Setting token memo as file ID so that it is easier to find NFT on search engines like DragonGlass
+        	        .setTokenMemo("HEDERA://" + NFTFileId.toString()) //Setting token memo as file ID so that it is easier to find NFT on search engines like DragonGlass
         	        .setTreasuryAccountId(studentAccountId) //Giving the token to the student's account
         	        .setInitialSupply(1) //Supply of token is 1, so that the token is non-fungible
         	        .setAdminKey(adminKey.getPublicKey()) //Signing with client's admin key so that the transaction is verified with the NFT client
@@ -298,7 +374,7 @@ public class studentTokens {
             System.out.println("Type 2 for Robotics Club");
             System.out.println("Type 3 for P2P Tutoring");
             int clubchoice = tokinput.nextInt();
-            chooseClubs(clubchoice, studentAccountId, studentAccountPrivateKey, client);
+            chooseClubs(clubchoice, studentAccountId, studentAccountPrivateKey, NFTFileId, NFTImagePrivateKey, client);
         }
         
 	}
